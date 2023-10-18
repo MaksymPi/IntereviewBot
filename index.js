@@ -24,11 +24,28 @@ bot.command('start', async (ctx) => {
 
 bot.hears(['HTML', 'CSS', 'JS', 'React'], async (ctx) => {
 
-  const inlineKeyboard = new InlineKeyboard().text('Отримати відповідь', 'getAnswer').text('Відмінити', 'cancel')
+  const inlineKeyboard = new InlineKeyboard()
+  .text('Отримати відповідь', JSON.stringify({
+    type: ctx.message.text,
+    questionId: 1,
+  }))
+  .text('Відмінити', 'cancel')
 
   await ctx.reply(`Що таке ${ctx.message.text}?`,{
     reply_markup: inlineKeyboard
   });
+})
+
+bot.on('callback_query:data', async (ctx) => {
+  if (ctx.callbackQuery.data === 'cancel') {
+    await ctx.reply('Відмінено')
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
+  const callBackData = JSON.parse(ctx.callbackQuery.data);
+  await ctx.reply(`${callBackData.type} - складова Front end`);
+  await ctx.answerCallbackQuery();
 })
 
 bot.catch((err) => {
