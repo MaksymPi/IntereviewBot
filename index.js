@@ -1,37 +1,49 @@
 require('dotenv').config();
 
 
-const { Bot, Keyboard, InlineKeyboard, GrammyError, HttpError,} = require('grammy');
+const {
+  Bot,
+  Keyboard,
+  InlineKeyboard,
+  GrammyError,
+  HttpError,
+} = require('grammy');
+
+const { getRandomQuestion } = require('./utils')
 
 const bot = new Bot(process.env.BOT_API_KEY);
 
 bot.command('start', async (ctx) => {
 
   const startKeyboard = new Keyboard()
-  .text('HTML')
-  .text('CSS').row()
-  .text('JS')
-  .text('React')
-  .resized();
+    .text('HTML')
+    .text('CSS').row()
+    .text('JS')
+    .text('React')
+    .resized();
 
   await ctx.reply(
     'Привіт! Я InterviewFrontend_bot \nЯ допоможу тобі підготуватися до співбесіди!'
   );
-  await ctx.reply('З чого розпочнемо?',{
-    reply_markup:startKeyboard
+  await ctx.reply('З чого розпочнемо?', {
+    reply_markup: startKeyboard
   })
 });
 
 bot.hears(['HTML', 'CSS', 'JS', 'React'], async (ctx) => {
 
-  const inlineKeyboard = new InlineKeyboard()
-  .text('Отримати відповідь', JSON.stringify({
-    type: ctx.message.text,
-    questionId: 1,
-  }))
-  .text('Відмінити', 'cancel')
+  const topic = ctx.message.text;
+  const question = getRandomQuestion(topic);
 
-  await ctx.reply(`Що таке ${ctx.message.text}?`,{
+  const inlineKeyboard = new InlineKeyboard()
+    .text('Отримати відповідь', JSON.stringify({
+      type: ctx.message.text,
+      questionId: question.id,
+    })
+    );
+
+
+  await ctx.reply(question.text, {
     reply_markup: inlineKeyboard
   });
 })
