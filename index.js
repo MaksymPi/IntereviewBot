@@ -35,13 +35,29 @@ bot.hears(['HTML', 'CSS', 'JS', 'React'], async (ctx) => {
   const topic = ctx.message.text;
   const question = getRandomQuestion(topic);
 
-  const inlineKeyboard = new InlineKeyboard()
-    .text('Отримати відповідь', JSON.stringify({
-      type: ctx.message.text,
-      questionId: question.id,
-    })
-    );
+let inlineKeyboard;
 
+  if (question.hasOptions) {
+    const buttonRows = question.options.map((option) => [
+      InlineKeyboard.text(
+        option.text,
+        JSON.stringify({
+        type: `${topic}-option`,
+        isCorrect: option.isCorrect,
+        questionId: question.id,
+      }),
+      ),
+    ]);
+
+    inlineKeyboard = InlineKeyboard.from(buttonRows);
+  } else {
+    inlineKeyboard = new InlineKeyboard()
+      .text('Отримати відповідь', JSON.stringify({
+        type: ctx.message.text,
+        questionId: question.id,
+      })
+      );
+  }
 
   await ctx.reply(question.text, {
     reply_markup: inlineKeyboard
@@ -49,15 +65,11 @@ bot.hears(['HTML', 'CSS', 'JS', 'React'], async (ctx) => {
 })
 
 bot.on('callback_query:data', async (ctx) => {
-  if (ctx.callbackQuery.data === 'cancel') {
-    await ctx.reply('Відмінено')
-    await ctx.answerCallbackQuery();
-    return;
-  }
-
   const callBackData = JSON.parse(ctx.callbackQuery.data);
-  await ctx.reply(`${callBackData.type} - складова Front end`);
-  await ctx.answerCallbackQuery();
+
+  // if (!callBackData.type.includes('option'){
+
+  // })
 })
 
 bot.catch((err) => {
