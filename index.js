@@ -9,7 +9,7 @@ const {
   HttpError,
 } = require('grammy');
 
-const { getRandomQuestion } = require('./utils')
+const { getRandomQuestion, getCorrectAnswer } = require('./utils')
 
 const bot = new Bot(process.env.BOT_API_KEY);
 
@@ -17,9 +17,12 @@ bot.command('start', async (ctx) => {
 
   const startKeyboard = new Keyboard()
     .text('HTML')
-    .text('CSS').row()
+    .text('CSS')
+    .row()
     .text('JS')
     .text('React')
+    .row()
+    .text('Випадкове запитання?')
     .resized();
 
   await ctx.reply(
@@ -30,22 +33,22 @@ bot.command('start', async (ctx) => {
   })
 });
 
-bot.hears(['HTML', 'CSS', 'JS', 'React'], async (ctx) => {
+bot.hears(['HTML', 'CSS', 'JS', 'React','Випадкове запитання?'], async (ctx) => {
 
-  const topic = ctx.message.text;
-  const question = getRandomQuestion(topic);
+  const topic = ctx.message.text.toLowerCase();
+  const {question, questionTopic} = getRandomQuestion(topic);
 
-let inlineKeyboard;
+  let inlineKeyboard;
 
   if (question.hasOptions) {
     const buttonRows = question.options.map((option) => [
       InlineKeyboard.text(
         option.text,
         JSON.stringify({
-        type: `${topic}-option`,
-        isCorrect: option.isCorrect,
-        questionId: question.id,
-      }),
+          type: `${questionTopic}-option`,
+          isCorrect: option.isCorrect,
+          questionId: question.id,
+        }),
       ),
     ]);
 
@@ -53,7 +56,7 @@ let inlineKeyboard;
   } else {
     inlineKeyboard = new InlineKeyboard()
       .text('Отримати відповідь', JSON.stringify({
-        type: ctx.message.text,
+        type: questionTopic,
         questionId: question.id,
       })
       );
@@ -67,10 +70,26 @@ let inlineKeyboard;
 bot.on('callback_query:data', async (ctx) => {
   const callBackData = JSON.parse(ctx.callbackQuery.data);
 
-  // if (!callBackData.type.includes('option'){
+  if (!callBackData.type.includes('option')) {
+    const answer = getCorrectAnswer(callBackData.type, callBackData.questionId);
+    await ctx.reply(answer, {
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+    });
+    await ctx.answerCallbackQuery();
+    return;
+  }
 
-  // })
-})
+  if(callBackData.isCorrect) {
+    await ctx.reply('Вірно');
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
+  const answer = getCorrectAnswer(callBackData.type.split('-')[0],callBackData.questionId);
+    await ctx.reply(`Невірно Правильна відповідь: ${answer}`);
+    await ctx.answerCallbackQuery();
+});
 
 bot.catch((err) => {
   const ctx = err.ctx;
